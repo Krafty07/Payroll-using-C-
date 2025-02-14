@@ -1,0 +1,292 @@
+#include <iostream>
+#include <string>
+#include<iomanip>
+#include <fstream>
+#include<conio.h>
+using namespace std;
+enum class EmployeeType { Hourly_Worker, Salaried_Worker, Manager };
+class Employee
+{
+protected:
+	string name;
+	int empid;
+	double tax = 0.0;
+	double netpay = 0.0;
+	double salary = 0.0;
+public:
+	Employee()
+	{
+		empid = 0;
+	}
+	virtual void getdata() = 0;
+	virtual string getType() = 0;
+	virtual double calculatePay() = 0;
+	virtual double calculateTax()
+	{
+		tax = 0.1 * salary; // 10% flat tax rate
+		return tax;
+	}
+	virtual double calculatenetpay()
+	{
+		netpay = salary - tax;
+		return netpay;
+	}
+	~Employee()
+	{}
+	virtual string getname()
+	{
+		return name;
+	}
+};
+class Manager : public Employee
+{
+protected:
+	double bonus;
+	double basesalary;
+public:
+	Manager()
+	{
+		basesalary = 0.0;
+		bonus = 0.0;
+	}
+	void getdata()
+	{
+		ofstream out("data.txt");
+		cout << "Employee Name:";
+		cin >> name;
+		out << name << endl;
+		cout << "Enter employee ID:";
+		cin >> empid;
+		out << empid << endl;
+		cout << "Enter bonus:";
+		cin >> bonus;
+		out << bonus << endl;
+		cout << "Enter base salary:";
+		cin >> basesalary;
+		out << basesalary << endl;
+		out.close();
+	}
+	double calculatePay()
+	{
+		salary = basesalary;
+		return basesalary + bonus;
+	}
+	double calculatenetpay() override
+	{
+		tax = calculateTax();
+		netpay = basesalary + bonus - tax;
+		return netpay;
+	}
+	string getType()
+	{
+		return "Manager";
+	}
+};
+class HourlyWorker : public Employee
+{
+protected:
+	double hourlyrate, hoursworked;
+public:
+	HourlyWorker()
+	{
+		hourlyrate = 0.0;
+		hoursworked = 0.0;
+	}
+	void getdata()
+	{
+		ofstream out("data.txt");
+		cout << "Employee Name:";
+		cin >> name;
+		out << name << endl;
+		cout << "Enter Employee Id:";
+		cin >> empid;
+		out << empid << endl;
+		cout << "Enter Hourly Rate:";
+		cin >> hourlyrate;
+		out << hourlyrate << endl;
+		cout << "Enter Hours Worked:";
+		cin >> hoursworked;
+		out << hoursworked << endl;
+		out.close();
+	}
+	double calculatePay()
+	{
+		salary = hourlyrate * hoursworked;
+		return salary;
+	}
+	string getType()
+	{
+		return "Hourly Worker";
+	}
+};
+class SalariedWorker : public Employee
+{
+protected:
+	double monthlysalary;
+public:
+	SalariedWorker()
+	{
+		monthlysalary = 0.0;
+	}
+	void getdata()
+	{
+		ofstream out("data.txt");
+		cout << "Enter Employee Name:";
+		cin >> name;
+		out << name << endl;
+		cout << "Enter Employee ID:";
+		cin >> empid;
+		out << empid << endl;
+		cout << "Enter Monthly Salary:";
+		cin >> monthlysalary;
+		out << monthlysalary << endl;
+		out.close();
+	}
+	double calculatePay()
+	{
+		salary = monthlysalary;
+		return salary;
+	}
+	string getType()
+	{
+		return "Salaried Worker";
+	}
+};
+class Payroll :public SalariedWorker, public Manager, public HourlyWorker
+{
+private:
+	const int MAX_EMPLOYEE = 100;
+	Employee* employees[100];
+	int employeeCount;
+
+public:
+	Payroll()
+	{
+		employeeCount = 0;
+	}
+	~Payroll()
+	{
+		for (int i = 0; i < employeeCount; ++i)
+		{
+			delete employees[i];
+		}
+	}
+	void addEmployee(Employee* employee)
+	{
+		if (employeeCount < MAX_EMPLOYEE)
+		{
+			employees[employeeCount++] = employee;
+		}
+		else
+		{
+			cout << "Cannot add more employees. Payroll system full." << endl;
+		}
+	}
+	void generatePayrollReport()
+	{
+		ofstream file("bill.txt");
+		cout << "\nPayroll Bill:\n";
+		cout << "--------------------------------------------------------------------------------\n";
+		cout << "Employee Name       | Type            | Salary        | Tax           | Net Pay\n";
+		cout << "--------------------------------------------------------------------------------\n";
+
+		for (int i = 0; i < employeeCount; ++i)
+		{
+			double salary = employees[i]->calculatePay();
+			double tax = employees[i]->calculateTax();
+			double netPay = employees[i]->calculatenetpay();
+
+			cout << left << setw(20) << employees[i]->getname() << " | ";
+			cout << setw(15) << employees[i]->getType() << " | ";
+			cout << right << "Rs" << setw(10) << fixed << setprecision(2) << salary << " | ";
+			cout << "Rs" << setw(10) << fixed << setprecision(2) << tax << " | ";
+			cout << "Rs" << setw(10) << fixed << setprecision(2) << netPay << "\n";
+		}
+		cout << "--------------------------------------------------------------------------------\n";
+		file << "\nPayroll Bill:\n";
+		file << "--------------------------------------------------------------------------------\n";
+		file << "Employee Name       | Type            | Salary        | Tax           | Net Pay\n";
+		file << "--------------------------------------------------------------------------------\n";
+		for (int i = 0; i < employeeCount; ++i)
+		{
+			double salary = employees[i]->calculatePay();
+			double tax = employees[i]->calculateTax();
+			double netPay = employees[i]->calculatenetpay();
+
+			file << left << setw(20) << employees[i]->getname() << " | ";
+			file << setw(15) << employees[i]->getType() << " | ";
+			file << right << "Rs" << setw(10) << fixed << setprecision(2) << salary << " | ";
+			file << "Rs" << setw(10) << fixed << setprecision(2) << tax << " | ";
+			file << "Rs" << setw(10) << fixed << setprecision(2) << netPay << "\n";
+		}
+		file << "--------------------------------------------------------------------------------\n";
+		file.close();
+	}
+};
+template<class T>
+T pass(T& a)
+{
+	cout << "Invalid choice!!....Try Again."<<endl;
+	return a;
+}
+int main()
+{
+	Payroll payroll;
+	char choice;
+	bool employeeadded = false;
+	cout << "*****************************************************************************************************************";
+	cout << "\n\n                             EMPLOYEE PAYROLL DETAILS                                                  \n";
+	cout << "*****************************************************************************************************************";
+	cout << endl;
+	do
+	{
+		cout << "\nEnter Employee Type(H or h for Hourly Worker,S or s for Salaried Worker,M or m for Manger):";
+		cin >> choice;
+		switch (choice)
+		{
+		case 'H':
+		case 'h':
+		{
+			cout << "HOURLY WORKER" << endl;
+			HourlyWorker* hourlyworker = new HourlyWorker();
+			hourlyworker->getdata();
+			payroll.addEmployee(hourlyworker);
+			employeeadded = true;
+			break;
+		}
+		case 'S':
+		case 's':
+		{
+			cout << "SALARIED WORKER" << endl;
+			SalariedWorker* salariedworker = new SalariedWorker();
+			salariedworker->getdata();
+			payroll.addEmployee(salariedworker);
+			employeeadded = true;
+			break;
+		}
+		case 'M':
+		case 'm':
+		{
+			cout << "MANAGER" << endl;
+			Manager* manager = new Manager();
+			manager->getdata();
+			payroll.addEmployee(manager);
+			employeeadded = true;
+			break;
+		}
+		default:
+		{
+			int i = 0;
+			pass(i);
+			break;
+		}
+		}
+		cout << "Do you want to add another employee?(Y/N):";
+		cin >> choice;
+	} while (choice == 'Y' || choice == 'y');
+	if (employeeadded)
+	{
+		payroll.generatePayrollReport();
+	}
+	_getch();
+}
